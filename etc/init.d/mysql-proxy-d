@@ -1,0 +1,92 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:             mysql-proxy-d{daemon_id}
+# Required-Start:       $syslog $remote_fs
+# Required-Stop:        $syslog $remote_fs
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+### END INIT INFO
+
+daemon_id={daemon_id}
+ulimit -n 16834
+mysql_proxy="/mysql-proxy-0.8.4/bin/mysql-proxy"
+config_file="/mysql-proxy/dconf/d$daemon_id/conf.cnf"
+mysql_proxy_cmd="/mysql-proxy-0.8.4/libexec/mysql-proxy--defaults-file=$config_file"
+pid_file="/mysql-proxy/dconf/d$daemon_id/mysql-proxy.pid"
+name="mysql-proxy-d$daemon_id" 
+if ! test -x $mysql_proxy; then
+  echo "Can't execute $mysql_proxy"
+  exit;
+fi
+ 
+start_mysql_proxy(){
+  if [ -e $pid_file ]; then
+    pid=$(cat ${pid_file})
+    proc_cmd=$(cat /proc/$pid/cmdline)
+    if [ -d /proc/$pid ]; then
+      if [ $proc_cmd = $mysql_proxy_cmd ]; then
+        echo $proc_cmd
+        echo $mysql_proxy_cmd
+        echo "$name is already running."
+        echo "pid is $pid"
+      else
+        rm $pid_file
+        echo "old pid_file of $name was deleted."
+        $mysql_proxy --defaults-file=$config_file
+        echo "$name started."        
+      fi
+    else
+      rm $pid_file
+      echo "old pid_file of $name was deleted."
+      $mysql_proxy --defaults-file=$config_file
+      echo "$name started."
+    fi
+  else
+    $mysql_proxy --defaults-file=$config_file
+    echo "$name started."
+  fi
+}
+ 
+stop_mysql_proxy(){
+  if [ -e $pid_file ]; then
+    pid=$(cat ${pid_file})
+    proc_cmd=$(cat /proc/$pid/cmdline)
+    if [ -d /proc/$pid ]; then
+      if [ "$proc_cmd" = "$mysql_proxy_cmd" ]; then
+        kill $pid
+        echo "$name stoped."
+        rm $pid_file
+        echo "pid_file of $name was deleted."
+      else
+        echo "$name is't running."
+        rm $pid_file
+        echo "old pid_file of $name was deleted."
+      fi
+    else
+       echo "$name is't running."
+       rm $pid_file
+       echo "old pid_file of $name was deleted."
+    fi
+  else
+    echo "couldn't find pid_file for $name."
+    echo "perhaps $name is't running."
+  fi
+}
+
+case "$1" in
+    'start' )
+        start_mysql_proxy
+        ;;
+    'stop' )
+    stop_mysql_proxy
+        ;;
+    'restart' )
+    stop_mysql_proxy && sleep 1  && start_mysql_proxy
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}" >&2
+        ;;
+esac
+
+exit 0
