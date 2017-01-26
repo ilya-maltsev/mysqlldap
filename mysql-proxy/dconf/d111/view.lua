@@ -1,12 +1,17 @@
-# MySQL Proxy's configuration file (mysql-proxy.cnf)
- 
-[mysql-proxy]
-daemon = true
-keepalive = true
-plugins = proxy
-pid-file = /mysql-proxy/dconf/d{id}/mysql-proxy.pid
-log-file = /var/log/mysql-proxy/mysql-proxy-d{id}.log
-log-level = message
-proxy-address = {listen_mysql-proxy_ip}:{listen_mysql-proxy_port}
-proxy-backend-addresses = {forward_mysql-db_ip}:{forward_mysql-db_port}
-proxy-lua-script = /mysql-proxy/dconf/d{id}/view.lua
+id = '1111'
+dofile('/mysql-proxy/share_lib.lua')
+local_log = '/mysql-proxy/dconf/d'..id..'/local-users-queries.log'
+dname = 'mysql-proxy-d'..id
+
+function read_query(packet)
+        write_query(packet,local_log,dname)
+end
+
+function read_auth_result(auth)
+        write_auth_result(auth,local_log,dname)
+end
+
+function read_auth()
+	return ldap_roles(local_log,dname)
+end
+
