@@ -1,2 +1,2 @@
 # mysqlldap
-Script for auth in mysql through mysql-proxy & openldap
+Script for auth in mysql through mysql-proxy & lualdap & openldap
